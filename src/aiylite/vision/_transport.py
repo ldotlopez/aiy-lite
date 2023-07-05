@@ -21,6 +21,7 @@ import struct
 
 from . import _spicomm
 
+
 class _SpiTransport:
     """Communicate with VisionBonnet over SPI bus."""
 
@@ -35,7 +36,7 @@ class _SpiTransport:
 
 
 def _socket_recvall(s, size):
-    buf = b''
+    buf = b""
     while size:
         newbuf = s.recv(size)
         if not newbuf:
@@ -49,12 +50,12 @@ def _socket_receive_message(s):
     buf = _socket_recvall(s, 4)  # 4 bytes
     if not buf:
         return None
-    size = struct.unpack('!I', buf)[0]
+    size = struct.unpack("!I", buf)[0]
     return _socket_recvall(s, size)
 
 
 def _socket_send_message(s, msg):
-    s.sendall(struct.pack('!I', len(msg)))  # 4 bytes
+    s.sendall(struct.pack("!I", len(msg)))  # 4 bytes
     s.sendall(msg)  # len(msg) bytes
 
 
@@ -65,8 +66,8 @@ class _SocketTransport:
         """Open connection to the bonnet."""
         self._client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-        host = os.environ.get('VISION_BONNET_HOST', '172.28.28.10')
-        port = int(os.environ.get('VISION_BONNET_PORT', '35000'))
+        host = os.environ.get("VISION_BONNET_HOST", "172.28.28.10")
+        port = int(os.environ.get("VISION_BONNET_PORT", "35000"))
         self._client.connect((host, port))
 
     def send(self, request, timeout=None):
@@ -78,7 +79,7 @@ class _SocketTransport:
 
 
 def _is_arm():
-    return os.uname()[4].startswith('arm')
+    return os.uname()[4].startswith("arm")
 
 
 def make_transport():

@@ -28,9 +28,9 @@ the camera, will not contain overlays.
 
 import time
 
+import picamera
 from PIL import Image, ImageDraw
 
-import picamera
 
 def _round_to_bit(value, power):
     """Rounds the given value to the next multiple of 2^power.
@@ -62,13 +62,13 @@ class Annotator:
       default_color: PIL.ImageColor (with alpha) default for the drawn content.
     """
 
-    def __init__(self, camera, bg_color=None, default_color=None,
-                 dimensions=None):
+    def __init__(self, camera, bg_color=None, default_color=None, dimensions=None):
         self._dims = dimensions if dimensions else camera.resolution
         self._buffer_dims = _round_buffer_dims(self._dims)
-        self._buffer = Image.new('RGBA', self._buffer_dims)
+        self._buffer = Image.new("RGBA", self._buffer_dims)
         self._overlay = camera.add_overlay(
-            self._buffer.tobytes(), format='rgba', layer=3, size=self._buffer_dims)
+            self._buffer.tobytes(), format="rgba", layer=3, size=self._buffer_dims
+        )
         self._draw = ImageDraw.Draw(self._buffer)
         self._bg_color = bg_color if bg_color else (0, 0, 0, 0xA0)
         self._default_color = default_color if default_color else (0xFF, 0, 0, 0xFF)
@@ -108,8 +108,7 @@ class Annotator:
         self.update()
 
     def clear(self):
-        """Clears the contents of the overlay - leaving only the plain background.
-        """
+        """Clears the contents of the overlay - leaving only the plain background."""
         self._draw.rectangle((0, 0) + self._dims, fill=self._bg_color)
 
     def bounding_box(self, rect, outline=None, fill=None):
@@ -148,9 +147,14 @@ class Annotator:
         """
         color = self._default_color if color is None else color
         self._draw.ellipse(
-            (location[0] - radius, location[1] - radius, location[0] + radius,
-             location[1] + radius),
-            fill=color)
+            (
+                location[0] - radius,
+                location[1] - radius,
+                location[0] + radius,
+                location[1] + radius,
+            ),
+            fill=color,
+        )
 
 
 def _main():
@@ -165,12 +169,10 @@ def _main():
         annotator = Annotator(camera)
         for i in range(10):
             annotator.clear()
-            annotator.bounding_box(
-                (20, 20, 70, 70), outline=(0, 0xFF, 0, 0xFF), fill=0)
+            annotator.bounding_box((20, 20, 70, 70), outline=(0, 0xFF, 0, 0xFF), fill=0)
             annotator.bounding_box((10 * i, 10, 10 * i + 50, 60))
-            annotator.bounding_box(
-                (80, 0, 130, 50), outline=(0, 0, 0xFF, 0xFF), fill=0)
-            annotator.text((100, 100), 'Hello World')
+            annotator.bounding_box((80, 0, 130, 50), outline=(0, 0, 0xFF, 0xFF), fill=0)
+            annotator.text((100, 100), "Hello World")
             annotator.point((10, 100), radius=5)
             annotator.update()
             time.sleep(1)
@@ -178,5 +180,5 @@ def _main():
         time.sleep(10)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     _main()

@@ -15,7 +15,7 @@ from collections import OrderedDict
 
 
 def rgb(color):
-    return 'rgb(%s, %s, %s)' % color
+    return "rgb(%s, %s, %s)" % color
 
 
 class Tag:
@@ -27,24 +27,28 @@ class Tag:
 
         for attr in self.REQUIRED_ATTRS:
             if attr not in kwargs:
-                raise ValueError('Missing attribute "%s" from tag <%s/>' % (attr, self.NAME))
+                raise ValueError(
+                    f'Missing attribute "{attr}" from tag <{self.NAME}/>'
+                )
 
         for key, value in kwargs.items():
-          self._attrs[key.replace('_', '-')] = value
+            self._attrs[key.replace("_", "-")] = value
 
     @property
     def value(self):
         return None
 
     def __str__(self):
-        sattrs = ' '.join('%s="%s"' % (name, value) for name, value in self._attrs.items())
+        sattrs = " ".join(
+            f'{name}="{value}"' for name, value in self._attrs.items()
+        )
         if sattrs:
-            sattrs = ' ' + sattrs
+            sattrs = " " + sattrs
         v = self.value
         if v is None:
-            return '<%s%s/>' % (self.NAME, sattrs)
+            return f"<{self.NAME}{sattrs}/>"
 
-        return '<%s%s>%s</%s>' % (self.NAME, sattrs, v, self.NAME)
+        return f"<{self.NAME}{sattrs}>{v}</{self.NAME}>"
 
 
 class TagContainer(Tag):
@@ -58,42 +62,43 @@ class TagContainer(Tag):
 
     @property
     def value(self):
-        return ''.join(str(child) for child in self._children)
+        return "".join(str(child) for child in self._children)
+
 
 class Svg(TagContainer):
-    NAME = 'svg'
+    NAME = "svg"
 
     def __init__(self, **kwargs):
-        super().__init__(**{'xmlns':'http://www.w3.org/2000/svg', **kwargs})
+        super().__init__(**{"xmlns": "http://www.w3.org/2000/svg", **kwargs})
 
 
 class Group(TagContainer):
-    NAME = 'g'
+    NAME = "g"
 
 
 class Line(Tag):
-    NAME = 'line'
-    REQUIRED_ATTRS = ('x1', 'y1', 'x2', 'y2')
+    NAME = "line"
+    REQUIRED_ATTRS = ("x1", "y1", "x2", "y2")
 
 
 class Rect(Tag):
-    NAME = 'rect'
-    REQUIRED_ATTRS = ('x', 'y', 'width', 'height')
+    NAME = "rect"
+    REQUIRED_ATTRS = ("x", "y", "width", "height")
 
 
 class Circle(Tag):
-    NAME = 'circle'
-    REQUIRED_ATTRS = ('cx', 'cy', 'r')
+    NAME = "circle"
+    REQUIRED_ATTRS = ("cx", "cy", "r")
 
 
 class Ellipse(Tag):
-    NAME = 'ellipse'
-    REQUIRED_ATTRS = ('cx', 'cy', 'rx', 'ry')
+    NAME = "ellipse"
+    REQUIRED_ATTRS = ("cx", "cy", "rx", "ry")
 
 
 class Text(Tag):
-    NAME = 'text'
-    REQUIRED_ATTRS = ('x', 'y')
+    NAME = "text"
+    REQUIRED_ATTRS = ("x", "y")
 
     def __init__(self, text, **kwargs):
         super().__init__(**kwargs)
@@ -103,6 +108,7 @@ class Text(Tag):
     def value(self):
         return self._text
 
+
 class Path(Tag):
-    NAME = 'path'
-    REQUIRED_ATTRS = ('d',)
+    NAME = "path"
+    REQUIRED_ATTRS = ("d",)

@@ -21,11 +21,11 @@ import signal
 import struct
 import threading
 
-SPICOMM_DEV = '/dev/vision_spicomm'
+SPICOMM_DEV = "/dev/vision_spicomm"
 
-SPICOMM_IOCTL_RESET         = 0x00008901
-SPICOMM_IOCTL_TRANSACT      = 0xc0108903
-SPICOMM_IOCTL_TRANSACT_MMAP = 0xc0108904
+SPICOMM_IOCTL_RESET = 0x00008901
+SPICOMM_IOCTL_TRANSACT = 0xC0108903
+SPICOMM_IOCTL_TRANSACT_MMAP = 0xC0108904
 
 HEADER_SIZE = 4 * 4
 DEFAULT_PAYLOAD_SIZE = 12 * 1024 * 1024  # 12M
@@ -34,13 +34,18 @@ FLAG_ERROR = 1 << 0
 FLAG_TIMEOUT = 1 << 1
 FLAG_OVERFLOW = 1 << 2
 
+
 def _get_default_payload_size():
-    return int(os.environ.get('VISION_BONNET_SPICOMM_DEFAULT_PAYLOAD_SIZE',
-                              DEFAULT_PAYLOAD_SIZE))
+    return int(
+        os.environ.get(
+            "VISION_BONNET_SPICOMM_DEFAULT_PAYLOAD_SIZE", DEFAULT_PAYLOAD_SIZE
+        )
+    )
 
 
 class SpicommError(IOError):
     """Base class for all Spicomm errors."""
+
     pass
 
 
@@ -66,22 +71,22 @@ class SpicommTimeoutError(SpicommError):
 
 def _read_header(buf):
     """Returns (flags, timeout_ms, buffer_size, payload_size) tuple."""
-    return struct.unpack('IIII', buf[0:HEADER_SIZE])
+    return struct.unpack("IIII", buf[0:HEADER_SIZE])
 
 
 def _read_payload(buf, payload_size):
     """Returns payload bytes."""
-    return buf[HEADER_SIZE:HEADER_SIZE + payload_size]
+    return buf[HEADER_SIZE : HEADER_SIZE + payload_size]
 
 
 def _write_header(buf, timeout_ms, payload_size):
     """Writes transaction header into buffer."""
-    buf[0:HEADER_SIZE] = struct.pack('IIII', 0, timeout_ms, len(buf), payload_size)
+    buf[0:HEADER_SIZE] = struct.pack("IIII", 0, timeout_ms, len(buf), payload_size)
 
 
 def _write_payload(buf, payload):
     """Writes transaction payload into buffer."""
-    buf[HEADER_SIZE:HEADER_SIZE + len(payload)] = payload
+    buf[HEADER_SIZE : HEADER_SIZE + len(payload)] = payload
 
 
 def _get_timeout_ms(timeout, payload_size):
@@ -139,6 +144,7 @@ def _async_loop(dev, pipe, default_payload_size):
         except Exception as e:
             pipe.send(e)
 
+
 class AsyncSpicomm:
     """Class for communication with VisionBonnet via kernel driver.
 
@@ -151,13 +157,16 @@ class AsyncSpicomm:
         self._dev = os.open(SPICOMM_DEV, os.O_RDWR)
         self._pipe, pipe = mp.Pipe()
         self._lock = threading.Lock()
-        ctx = mp.get_context('fork')
+        ctx = mp.get_context("fork")
 
         if default_payload_size is None:
             default_payload_size = _get_default_payload_size()
 
-        self._process = ctx.Process(target=_async_loop, daemon=True,
-            args=(self._dev, pipe, default_payload_size))
+        self._process = ctx.Process(
+            target=_async_loop,
+            daemon=True,
+            args=(self._dev, pipe, default_payload_size),
+        )
         self._process.start()
 
     def __enter__(self):
@@ -193,9 +202,11 @@ class AsyncSpicomm:
         # Setup temporary SIGINT handler
         with self._lock:
             captured_args = None
+
             def handler(*args):
                 nonlocal captured_args
                 captured_args = args
+
             old_handler = signal.signal(signal.SIGINT, handler)
 
             # Execute communication transaction without SIGINT interruptions
@@ -296,8 +307,8 @@ def _transact_mmap(dev, mm, offset, request, timeout):
 
     mm[0:payload_size] = request
 
-    buf = bytearray(struct.pack('IIII', flags, timeout_ms, offset, payload_size))
-    assert(len(buf) == HEADER_SIZE)
+    buf = bytearray(struct.pack("IIII", flags, timeout_ms, offset, payload_size))
+    assert len(buf) == HEADER_SIZE
 
     # Buffer size is small (< 1024 bytes), so ioctl call doesn't block other threads.
     fcntl.ioctl(dev, SPICOMM_IOCTL_TRANSACT_MMAP, buf)
@@ -330,7 +341,9 @@ class SyncSpicommMmap(SyncSpicommBase):
 
         # Temporary bigger buffer
         offset = (len(self._mm) + (mmap.PAGESIZE - 1)) // mmap.PAGESIZE
-        with mmap.mmap(self._dev, length=len(request), offset=mmap.PAGESIZE * offset) as mm:
+        with mmap.mmap(
+            self._dev, length=len(request), offset=mmap.PAGESIZE * offset
+        ) as mm:
             return _transact_mmap(self._dev, mm, offset, request, timeout)
 
 
@@ -340,8 +353,10 @@ class SyncSpicommMmap(SyncSpicommBase):
 # point of view. Multiple threads and processes can access the device
 # node concurrently using one Spicomm instance per thread.
 # Transactions are serialized in the underlying kernel driver.
-_spicomm_type = os.environ.get('VISION_BONNET_SPICOMM', None)
-_spicomm_types = {'sync': SyncSpicomm,
-                  'sync_mmap': SyncSpicommMmap,
-                  'async': AsyncSpicomm}
+_spicomm_type = os.environ.get("VISION_BONNET_SPICOMM", None)
+_spicomm_types = {
+    "sync": SyncSpicomm,
+    "sync_mmap": SyncSpicommMmap,
+    "async": AsyncSpicomm,
+}
 Spicomm = _spicomm_types.get(_spicomm_type, SyncSpicommMmap)
